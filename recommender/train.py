@@ -21,16 +21,15 @@ def save_model_with_version(model, model_dir="models"):
     os.makedirs(model_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     model_path = os.path.join(model_dir, f"recommender_{timestamp}.pkl")
-    latest_model_path = os.path.join(model_dir, "latest_model.pkl")
-    
+    latest_model_path = os.path.join(model_dir, "recommender.pkl")
+
     # Save the model
     with open(model_path, "wb") as f:
         pickle.dump(model, f)
-    
-    # Update symlink
-    if os.path.exists(latest_model_path):
-        os.remove(latest_model_path)
-    os.symlink(model_path, latest_model_path)
+
+    # Save a copy as the main model file
+    with open(latest_model_path, "wb") as f:
+        pickle.dump(model, f)
 
 def train_model():
     validate_data("data/reviews.csv", ["user_id", "business_id", "rating"])

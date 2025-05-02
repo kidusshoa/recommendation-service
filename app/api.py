@@ -1,6 +1,7 @@
 import os
 import logging
-from fastapi import APIRouter, HTTPException, Query
+import shutil
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from typing import List
 from app.models import RecommendationResponse, TrainingResponse, Business
 from recommender.model import recommend_for_user
@@ -11,14 +12,19 @@ logger = logging.getLogger(__name__)
 
 # Validate required files at startup
 REQUIRED_FILES = [
-    "recommender.pkl",
+    "models/recommender.pkl",
     "data/reviews.csv",
     "data/businesses.csv"
 ]
 
+# Create directories if they don't exist
+os.makedirs("models", exist_ok=True)
+os.makedirs("data", exist_ok=True)
+
+# Check if files exist, but don't fail startup if they don't
 for file in REQUIRED_FILES:
     if not os.path.exists(file):
-        raise RuntimeError(f"Required file '{file}' is missing. Please ensure it exists.")
+        logger.warning(f"Required file '{file}' is missing. Some endpoints may not work until data is uploaded.")
 
 router = APIRouter(prefix="/api/v1", tags=["recommendations"])
 
@@ -62,13 +68,48 @@ async def retrain():
             detail=f"Failed to train model: {str(e)}"
         )
 
+@router.post("/data/upload", response_model=TrainingResponse)
+async def upload_data(
+    reviews: UploadFile = File(...),
+    businesses: UploadFile = File(...)
+):
+    try:
+        logger.info("Receiving data upload...")
+
+        # Save reviews file
+        with open("data/reviews.csv", "wb") as f:
+            shutil.copyfileobj(reviews.file, f)
+
+        # Save businesses file
+        with open("data/businesses.csv", "wb") as f:
+            shutil.copyfileobj(businesses.file, f)
+
+        logger.info("Data files uploaded successfully")
+        return TrainingResponse(
+            status="success",
+            message="Data files uploaded successfully"
+        )
+    except Exception as e:
+        logger.error(f"Error uploading data files: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error uploading data files: {str(e)}"
+        )
+
 @router.get("/health")
 async def health_check():
     try:
-        for file in REQUIRED_FILES:
-            if not os.path.exists(file):
-                raise RuntimeError(f"Required file '{file}' is missing.")
-        return {"status": "healthy"}
+        # Check if data files exist
+        data_files_exist = all(os.path.exists(file) for file in ["data/reviews.csv", "data/businesses.csv"])
+
+        # Check if model file exists
+        model_file_exists = os.path.exists("models/recommender.pkl")
+
+        return {
+            "status": "healthy",
+            "data_files_exist": data_files_exist,
+            "model_file_exists": model_file_exists
+        }
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
         return {"status": "unhealthy", "error": str(e)}
