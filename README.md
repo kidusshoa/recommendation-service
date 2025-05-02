@@ -26,12 +26,30 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 5000
 ```
 
-# API - endpoints
+# Recommendation Service
 
-```bash
-GET http://localhost:5000/recommendations/u001
-```
+## API Endpoints
 
-```bash
-POST http://localhost:5000/retrain
+### 1. Get Recommendations
+
+**URL**: `/api/v1/recommendations/{user_id}`  
+**Method**: `GET`  
+**Query Parameters**:
+
+- `limit` (int): Number of recommendations to return (default: 5, min: 1, max: 20)
+
+**Response**:
+
+```json
+{
+  "user_id": "string",
+  "recommendations": [
+    {
+      "business_id": "string",
+      "name": "string",
+      "category": "string",
+      "predicted_rating": 4.5
+    }
+  ]
+}
 ```
