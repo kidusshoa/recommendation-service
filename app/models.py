@@ -7,6 +7,19 @@ class Business(BaseModel):
     rating: Optional[float] = None
     predicted_rating: Optional[float] = None
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "business_id": "123",
+                    "name": "Example Business",
+                    "rating": 4.5,
+                    "predicted_rating": 4.2
+                }
+            ]
+        }
+    }
+
 class RecommendationResponse(BaseModel):
     user_id: str
     recommendations: List[Business]

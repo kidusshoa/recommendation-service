@@ -1,7 +1,7 @@
 import os
 import logging
 import shutil
-from fastapi import APIRouter, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Request
 from typing import List
 from app.models import RecommendationResponse, TrainingResponse, Business
 from recommender.model import recommend_for_user
@@ -31,15 +31,58 @@ router = APIRouter(prefix="/api/v1", tags=["recommendations"])
 @router.get("/recommendations/{user_id}", response_model=RecommendationResponse)
 async def get_recommendations(
     user_id: str,
-    limit: int = Query(default=5, ge=1, le=20, description="Number of recommendations to return")
+    limit: int = Query(default=5, ge=1, le=20, description="Number of recommendations to return"),
+    method: str = Query(default="hybrid", description="Recommendation method: 'hybrid', 'collaborative', or 'content'")
 ):
     try:
-        logger.info(f"Fetching recommendations for user_id={user_id} with limit={limit}")
-        recommendations = recommend_for_user(user_id, top_n=limit)
-        if not recommendations:
-            logger.warning(f"No recommendations found for user_id={user_id}")
+        logger.info(f"Fetching {method} recommendations for user_id={user_id} with limit={limit}")
+
+        # Import the appropriate recommendation function based on method
+        if method == "collaborative":
+            from recommender.model import get_collaborative_recommendations
+            raw_recommendations = get_collaborative_recommendations(user_id, top_n=limit)
+            # Convert to RecommendationResponse format
+            businesses = []
+            for biz_id, score, name, rating in raw_recommendations:
+                businesses.append(
+                    Business(
+                        business_id=str(biz_id),
+                        name=name,
+                        rating=rating,
+                        predicted_rating=round(score, 2)
+                    )
+                )
+            recommendations = RecommendationResponse(
+                user_id=user_id,
+                recommendations=businesses
+            )
+        elif method == "content":
+            from recommender.model import get_content_recommendations
+            raw_recommendations = get_content_recommendations(user_id, top_n=limit)
+            # Convert to RecommendationResponse format
+            businesses = []
+            for biz_id, score, name, rating in raw_recommendations:
+                businesses.append(
+                    Business(
+                        business_id=str(biz_id),
+                        name=name,
+                        rating=rating,
+                        predicted_rating=round(score, 2)
+                    )
+                )
+            recommendations = RecommendationResponse(
+                user_id=user_id,
+                recommendations=businesses
+            )
+        else:  # hybrid (default)
+            from recommender.model import recommend_for_user
+            recommendations = recommend_for_user(user_id, top_n=limit)
+
+        if not recommendations or len(recommendations.recommendations) == 0:
+            logger.warning(f"No recommendations found for user_id={user_id} using method={method}")
             raise HTTPException(status_code=404, detail="No recommendations found")
-        logger.info(f"Returning {len(recommendations)} recommendations for user_id={user_id}")
+
+        logger.info(f"Returning {len(recommendations.recommendations)} recommendations for user_id={user_id}")
         return recommendations
     except FileNotFoundError:
         logger.error("Model or data files not found")
@@ -95,6 +138,51 @@ async def upload_data(
             status_code=500,
             detail=f"Error uploading data files: {str(e)}"
         )
+
+@router.post("/webhook")
+async def handle_webhook(request: Request):
+    """
+    Handle webhooks for real-time updates
+    """
+    try:
+        # Verify webhook secret
+        webhook_secret = request.headers.get("X-Webhook-Secret")
+        expected_secret = os.environ.get("WEBHOOK_SECRET", "default-webhook-secret")
+
+        if webhook_secret != expected_secret:
+            logger.warning(f"Invalid webhook secret received")
+            raise HTTPException(status_code=401, detail="Invalid webhook secret")
+
+        # Parse webhook payload
+        payload = await request.json()
+        event = payload.get("event")
+        data = payload.get("data")
+
+        if not event or not data:
+            logger.warning(f"Invalid webhook payload: {payload}")
+            raise HTTPException(status_code=400, detail="Invalid webhook payload")
+
+        logger.info(f"Received webhook: {event}")
+
+        # Process different event types
+        if event.startswith("review.") or event.startswith("serviceReview."):
+            # Schedule model retraining
+            # In a production environment, you might want to use a task queue
+            # For simplicity, we'll just trigger retraining directly
+            logger.info(f"Scheduling model retraining due to webhook: {event}")
+
+            # Run in a separate thread to avoid blocking
+            import threading
+            thread = threading.Thread(target=lambda: train_model())
+            thread.daemon = True
+            thread.start()
+
+        return {"status": "success", "message": f"Webhook {event} processed"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing webhook: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing webhook: {str(e)}")
 
 @router.get("/health")
 async def health_check():
