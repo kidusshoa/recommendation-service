@@ -1,2 +1,21 @@
-user_id,business_id,rating,timestamp
-"1","1",5,2023-01-01
+user_id,business_id,rating,text,date
+"1","1",5,"Great coffee and atmosphere!",2023-01-01
+"1","2",4,"Nice selection of clothes",2023-01-02
+"1","3",5,"Very professional service",2023-01-03
+"1","9",5,"Best coffee in town!",2023-01-04
+"2","1",4,"Good place to work from",2023-01-05
+"2","4",5,"Found some great books here",2023-01-06
+"2","6",4,"Great trainers, clean facility",2023-01-07
+"2","9",5,"Amazing Ethiopian coffee",2023-01-08
+"3","3",4,"Helped with my IT problems",2023-01-09
+"3","5",3,"Busy but has everything",2023-01-10
+"3","7",5,"Beautiful traditional designs",2023-01-11
+"3","10",4,"Great selection of books",2023-01-12
+"4","2",3,"Average fashion store",2023-01-13
+"4","5",4,"Found everything I needed",2023-01-14
+"4","8",4,"Good design work",2023-01-15
+"4","9",5,"Excellent coffee experience",2023-01-16
+"5","1",4,"Nice ambiance",2023-01-17
+"5","4",4,"Good book selection",2023-01-18
+"5","6",5,"Best gym in Addis",2023-01-19
+"5","10",3,"Limited international titles",2023-01-20
