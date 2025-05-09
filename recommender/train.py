@@ -40,12 +40,13 @@ def save_model_with_version(model, model_dir=MODEL_DIR):
 
     logger.info(f"Model saved to {model_path} and {latest_model_path}")
 
-def train_model(use_mongodb=True):
+def train_model(use_mongodb=True, save_to_csv=True):
     """
     Train both collaborative filtering and content-based models
 
     Args:
         use_mongodb: Whether to fetch data from MongoDB (True) or use local CSV files (False)
+        save_to_csv: Whether to save MongoDB data to CSV files for backup (True) or not (False)
     """
     logger.info("Starting model training...")
 
@@ -56,11 +57,12 @@ def train_model(use_mongodb=True):
             reviews_df = fetch_reviews_as_dataframe()
             businesses_df = fetch_businesses_as_dataframe()
 
-            # Save data to CSV for backup and compatibility
-            os.makedirs(DATA_DIR, exist_ok=True)
-            reviews_df.to_csv(os.path.join(DATA_DIR, "reviews.csv"), index=False)
-            businesses_df.to_csv(os.path.join(DATA_DIR, "businesses.csv"), index=False)
-            logger.info(f"Data saved to CSV files in {DATA_DIR}")
+            # Save data to CSV for backup and compatibility if requested
+            if save_to_csv:
+                os.makedirs(DATA_DIR, exist_ok=True)
+                reviews_df.to_csv(os.path.join(DATA_DIR, "reviews.csv"), index=False)
+                businesses_df.to_csv(os.path.join(DATA_DIR, "businesses.csv"), index=False)
+                logger.info(f"Data saved to CSV files in {DATA_DIR}")
         else:
             # Validate data files
             validate_data(os.path.join(DATA_DIR, "reviews.csv"), ["user_id", "business_id", "rating"])

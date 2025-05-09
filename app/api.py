@@ -116,10 +116,11 @@ async def get_recommendations(
 
 @router.post("/retrain", response_model=TrainingResponse)
 async def retrain(
-    use_mongodb: bool = Query(default=True, description="Whether to use MongoDB data or local CSV files")
+    use_mongodb: bool = Query(default=True, description="Whether to use MongoDB data or local CSV files"),
+    save_to_csv: bool = Query(default=True, description="Whether to save MongoDB data to CSV files")
 ):
     try:
-        logger.info(f"Starting model retraining using MongoDB={use_mongodb}...")
+        logger.info(f"Starting model retraining using MongoDB={use_mongodb}, save_to_csv={save_to_csv}...")
 
         # Check if MongoDB is available when requested
         if use_mongodb:
@@ -131,8 +132,10 @@ async def retrain(
                 logger.warning(f"MongoDB connection failed, falling back to CSV files: {str(db_error)}")
                 use_mongodb = False
 
-        train_model(use_mongodb=use_mongodb)
+        # Train the model
+        train_model(use_mongodb=use_mongodb, save_to_csv=save_to_csv)
         logger.info("Model retrained successfully.")
+
         return TrainingResponse(
             status="success",
             message=f"Model retrained successfully using {'MongoDB' if use_mongodb else 'CSV files'}"
@@ -209,7 +212,7 @@ async def handle_webhook(request: Request):
 
             # Run in a separate thread to avoid blocking
             import threading
-            thread = threading.Thread(target=lambda: train_model())
+            thread = threading.Thread(target=lambda: train_model(use_mongodb=True, save_to_csv=True))
             thread.daemon = True
             thread.start()
 

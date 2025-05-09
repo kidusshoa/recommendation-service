@@ -1,11 +1,1 @@
-business_id,name,category,city,rating,description
-"1",Addis Cafe,Cafe,Addis Ababa,4.5,A cozy cafe in the heart of Addis Ababa
-"2",Fashion Hub,Fashion,Addis Ababa,4.2,Trendy fashion store with latest styles
-"3",Tech Solutions,Professional,Addis Ababa,4.8,IT services and consulting
-"4",Abyssinia Books,Books,Addis Ababa,4.3,Bookstore with wide selection of titles
-"5",Merkato Market,Retail,Addis Ababa,4.0,Largest open-air market in Africa
-"6",Ethio Fitness,Professional,Addis Ababa,4.6,Modern gym with professional trainers
-"7",Habesha Designs,Fashion,Addis Ababa,4.7,Traditional Ethiopian clothing with modern twist
-"8",Digital Express,Professional,Addis Ababa,4.1,Digital marketing and design services
-"9",Tomoca Coffee,Cafe,Addis Ababa,4.9,Famous Ethiopian coffee shop
-"10",Ras Books,Books,Addis Ababa,4.4,Specializing in Ethiopian literature
+business_id,name,category,description,city,rating
